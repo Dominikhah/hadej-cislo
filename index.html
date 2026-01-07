@@ -3,70 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hádej číslo - Pro Verze</title>
+    <title>Globální Hádání Čísla 🎲</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #6366f1; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; margin-bottom: 2rem; }
-        h1 { color: var(--primary); margin-top: 0; }
-        input { width: 80%; padding: 12px; margin: 10px 0; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; outline: none; transition: border 0.3s; }
-        input:focus { border-color: var(--primary); }
-        button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: transform 0.1s, opacity 0.3s; width: 85%; }
-        button:active { transform: scale(0.98); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        #gameArea, #leaderboard { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
-        .status { margin: 15px 0; font-weight: bold; min-height: 1.5rem; }
+        :root { --primary: #4f46e5; --bg: #f1f5f9; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--primary); font-size: 1.5rem; }
+        input { width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 6px; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 85%; }
+        #gameArea { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        th, td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .status { margin: 10px 0; min-height: 1.2rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="card" id="loginArea">
-        <h1>Vítej! 👋</h1>
-        <p>Zadej své jméno a začni hrát:</p>
-        <input type="text" id="playerName" placeholder="Tvoje jméno...">
-        <button onclick="startGame()">Start Hry</button>
+        <h1>Vítej ve hře! 👋</h1>
+        <p>Zadej jméno pro tabulku rekordů:</p>
+        <input type="text" id="playerName" placeholder="Tvé jméno...">
+        <button onclick="startGame()">Začít hrát</button>
     </div>
 
     <div class="card" id="gameArea">
-        <h1 id="welcomeTitle">Hraješ</h1>
-        <p id="hint">Myslím si číslo od 1 do 100...</p>
-        <input type="number" id="userGuess" placeholder="Tvé číslo">
+        <h2 id="welcomeTitle">Hraješ</h2>
+        <p>Myslím si číslo od 1 do 100.</p>
+        <input type="number" id="userGuess" placeholder="Tipni si...">
         <button onclick="makeGuess()">Tipnout!</button>
         <p class="status" id="statusMsg"></p>
         <p>Pokusy: <span id="attemptCount">0</span></p>
     </div>
 
-    <div class="card" id="leaderboardArea">
-        <h3>🏆 Tabulka rekordů</h3>
-        <table id="scoreTable">
+    <div class="card">
+        <h3>🏆 Globální tabulka (Top 5)</h3>
+        <table>
             <thead>
                 <tr>
                     <th>Hráč</th>
                     <th>Pokusy</th>
                 </tr>
             </thead>
-            <tbody id="scoreBody"></tbody>
+            <tbody id="scoreBody">
+                <tr><td colspan="2">Načítám rekordy...</td></tr>
+            </tbody>
         </table>
-        <br>
-        <button onclick="clearScores()" style="background: #ef4444; font-size: 0.8rem; width: auto;">Smazat historii</button>
     </div>
 
     <script>
+        // Nastavení tvého Supabase (Vložil jsem tvoje údaje)
+        const SUPABASE_URL = 'https://oqgvfxniqragucamwjqg.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_iJanoKhANSYBXdIZsXJT8w_43o192tz';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let targetNumber, attempts, currentPlayer;
 
-        // Načtení tabulky hned po startu
+        // Načtení tabulky hned po otevření stránky
         window.onload = updateLeaderboard;
 
         function startGame() {
             currentPlayer = document.getElementById('playerName').value.trim();
-            if (!currentPlayer) return alert("Musíš zadat jméno!");
-
+            if (!currentPlayer) return alert("Napiš jméno!");
             document.getElementById('loginArea').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             document.getElementById('welcomeTitle').innerText = "Hraje: " + currentPlayer;
-            
             resetGame();
         }
 
@@ -78,59 +79,53 @@
             document.getElementById('userGuess').value = "";
         }
 
-        function makeGuess() {
+        async function makeGuess() {
             const guess = parseInt(document.getElementById('userGuess').value);
             const msg = document.getElementById('statusMsg');
-            
             if (isNaN(guess)) return;
             attempts++;
             document.getElementById('attemptCount').innerText = attempts;
 
             if (guess === targetNumber) {
                 msg.style.color = "green";
-                msg.innerText = "Vítězství! Uhodl jsi to! 🎉";
-                saveScore(currentPlayer, attempts);
-                setTimeout(() => { if(confirm("Chceš hrát znovu?")) resetGame(); }, 500);
+                msg.innerText = "Výhra! 🎉 Ukládám do databáze...";
+                await saveScore(currentPlayer, attempts);
+                setTimeout(() => { if(confirm("Další kolo?")) resetGame(); }, 1000);
             } else if (guess < targetNumber) {
                 msg.style.color = "blue";
-                msg.innerText = "Zkus vyšší číslo! ⬆️";
+                msg.innerText = "Zkus větší! ⬆️";
             } else {
                 msg.style.color = "orange";
-                msg.innerText = "Zkus menší číslo! ⬇️";
+                msg.innerText = "Zkus menší! ⬇️";
             }
         }
 
-        function saveScore(name, score) {
-            // Získáme stará data z localStorage nebo prázdné pole
-            let history = JSON.parse(localStorage.getItem('guessGameScores')) || [];
-            
-            // Přidáme nový výsledek
-            history.push({ name: name, score: score });
-            
-            // Seřadíme podle počtu pokusů (nejmíň je nejlepší)
-            history.sort((a, b) => a.score - b.score);
-            
-            // Uložíme jen top 5
-            history = history.slice(0, 5);
-            
-            localStorage.setItem('guessGameScores', JSON.stringify(history));
-            updateLeaderboard();
+        async function saveScore(name, score) {
+            const { error } = await supabaseClient
+                .from('scores')
+                .insert([{ name: name, score: score }]);
+            if (error) console.error('Chyba zápisu:', error);
+            await updateLeaderboard();
         }
 
-        function updateLeaderboard() {
-            const history = JSON.parse(localStorage.getItem('guessGameScores')) || [];
+        async function updateLeaderboard() {
+            const { data, error } = await supabaseClient
+                .from('scores')
+                .select('*')
+                .order('score', { ascending: true })
+                .limit(5);
+
+            if (error) {
+                console.error('Chyba načítání:', error);
+                return;
+            }
+
             const body = document.getElementById('scoreBody');
             body.innerHTML = "";
-
-            history.forEach(item => {
+            data.forEach(item => {
                 const row = `<tr><td>${item.name}</td><td>${item.score}</td></tr>`;
                 body.innerHTML += row;
             });
-        }
-
-        function clearScores() {
-            localStorage.removeItem('guessGameScores');
-            updateLeaderboard();
         }
     </script>
 </body>
